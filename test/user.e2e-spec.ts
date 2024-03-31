@@ -3,21 +3,17 @@ import { ExecutionContext, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { UsersModule } from '../src/users/users.module';
 import { JwtAccessTokenAuthGuard } from '../src/auth/guards/jwt-access-auth.guard';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../src/users/models/user.entity';
 import { AccountsModule } from '../src/accounts/accounts.module';
 import { Account } from '../src/accounts/models/account.entity';
-import { Repository } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import { UsersService } from '../src/users/users.service';
 
 describe('UserController (e2e)', () => {
   let app: INestApplication;
   let usersService: UsersService;
-  let userRepository: Repository<User>;
-  let accountRepository: Repository<Account>;
-
-  const userRepositoryToken = getRepositoryToken(User);
-  const accountRepositoryToken = getRepositoryToken(Account);
+  let queryRunner: QueryRunner;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -48,16 +44,13 @@ describe('UserController (e2e)', () => {
     await app.init();
 
     usersService = moduleFixture.get<UsersService>(UsersService);
-    userRepository = moduleFixture.get<Repository<User>>(userRepositoryToken);
-    accountRepository = moduleFixture.get<Repository<Account>>(
-      accountRepositoryToken,
-    );
+    queryRunner = app.get(DataSource).createQueryRunner('master');
+    await queryRunner.startTransaction();
     await usersService.create({ email: 'hello@nestjs.com', name: 'hello' });
   });
 
   afterAll(async () => {
-    await userRepository.query('DELETE FROM user;');
-    await accountRepository.query('DELETE FROM account;');
+    await queryRunner.rollbackTransaction();
     await app.close();
   });
 
