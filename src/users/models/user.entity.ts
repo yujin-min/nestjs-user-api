@@ -14,7 +14,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'enum', enum: IUserType, default: IUserType.PERSONAL })
+  @Column({ default: 'personal' })
   type: IUserType;
 
   @Column()

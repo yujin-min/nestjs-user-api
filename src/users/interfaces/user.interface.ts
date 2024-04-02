@@ -1,3 +1,4 @@
+import { IAccount } from '../../accounts/interfaces/account.interface';
 import { IUserType } from './user-type.interface';
 
 export interface IUser {
@@ -6,4 +7,5 @@ export interface IUser {
   email: string;
   name: string;
   refreshToken: string;
+  account: IAccount;
 }

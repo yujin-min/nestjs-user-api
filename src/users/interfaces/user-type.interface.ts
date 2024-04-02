@@ -1,4 +1,1 @@
-export enum IUserType {
-  PERSONAL = 'personal',
-  BUSINESS = 'business',
-}
+export type IUserType = 'personal' | 'business';

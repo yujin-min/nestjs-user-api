@@ -23,6 +23,8 @@ coverage/coverage-final.json
 
 /.nyc_output
 
+test.db
+
 # IDEs and editors
 /.idea
 .project

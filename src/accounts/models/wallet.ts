@@ -14,7 +14,7 @@ export class Wallet {
     userType: IUserType,
   ) {
     this.money = new Money(amount * multiplier.money);
-    if (userType === IUserType.BUSINESS) {
+    if (userType === 'business') {
       this.point = new Point(this.money.value * multiplier.point);
     } else {
       this.point = new Point(this.money.value);
