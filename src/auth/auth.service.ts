@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-
+import { Cache } from 'cache-manager';
 import { Tokens } from './interfaces/tokens.interface';
 import { UsersService } from '../users/users.service';
 import { IUser } from '../users/interfaces/user.interface';
@@ -9,6 +10,7 @@ import { IUser } from '../users/interfaces/user.interface';
 @Injectable()
 export class AuthService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -36,12 +38,27 @@ export class AuthService {
   }
 
   async verifyRefreshToken({ refreshToken }) {
+    const userInfo: string = await this.cacheManager.get(
+      `refresh-${refreshToken}`,
+    );
+    if (userInfo) {
+      try {
+        const { id, email } = JSON.parse(userInfo);
+        return { id, email };
+      } catch (e) {
+        // do nothing
+      }
+    }
     const user = await this.usersService.findByRefreshToken(refreshToken);
     if (!user) throw new UnauthorizedException('invalid token');
     return { id: user.id, email: user.email };
   }
 
-  updateRefreshToken({ id, refreshToken }) {
+  async updateRefreshToken({ id, email, refreshToken }) {
+    await this.cacheManager.set(
+      `refresh-${refreshToken}`,
+      JSON.stringify({ id, email }),
+    );
     return this.usersService.update(id, { refreshToken });
   }
 
@@ -55,7 +72,7 @@ export class AuthService {
   async login({ email, name }: Partial<IUser>) {
     const { id } = await this.usersService.findOrCreate({ email, name });
     const { accessToken, refreshToken } = await this.getTokens({ id, email });
-    await this.updateRefreshToken({ id, refreshToken });
+    await this.updateRefreshToken({ id, email, refreshToken });
     return {
       access_token: accessToken,
       refresh_token: refreshToken,

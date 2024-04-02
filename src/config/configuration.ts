@@ -12,6 +12,8 @@ export default () => ({
   databaseHost: getDatabaseHost(),
   jwtSecret: process.env.JWT_ACCESS_SECRET,
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
+  redisHost: process.env.REDIS_HOST,
+  redisPort: process.env.REDIS_PORT,
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
