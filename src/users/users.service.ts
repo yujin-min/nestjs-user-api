@@ -6,9 +6,12 @@ import { IUser } from './interfaces/user.interface';
 import { User } from './models/user.entity';
 import { AccountsService } from '../accounts/accounts.service';
 import { AmountStrategy } from '../accounts/interfaces/amount-strategy.interface';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class UsersService {
+  tokenCache: object = {};
+
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
     @Inject('chargeAmountStrategy')
@@ -16,6 +19,15 @@ export class UsersService {
     private dataSource: DataSource,
     private accountsService: AccountsService,
   ) {}
+
+  @Cron(new Date(Date.now() + 1000))
+  async storeAllUsers() {
+    const users = await this.findAll();
+    users.forEach((user) => {
+      const { id, email, refreshToken } = user;
+      this.tokenCache[refreshToken] = { id, email };
+    });
+  }
 
   async create({ email, name }: Partial<IUser>) {
     let user = null;
@@ -53,7 +65,12 @@ export class UsersService {
   }
 
   async findByRefreshToken(refreshToken: string) {
-    return this.usersRepository.findOneBy({ refreshToken });
+    if (!this.tokenCache[refreshToken]) return null;
+    return this.tokenCache[refreshToken];
+    // const { id, email } = await this.usersRepository.findOneBy({
+    //   refreshToken,
+    // });
+    // return { id, email };
   }
 
   async findOrCreate({ email, name }: Partial<IUser>) {

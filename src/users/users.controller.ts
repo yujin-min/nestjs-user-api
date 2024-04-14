@@ -27,7 +27,8 @@ export class UsersController {
   @UseGuards(JwtAccessTokenAuthGuard)
   @SerializeUser()
   find(@User() user: TokenUserDto) {
-    return this.usersService.find(user.id);
+    return user;
+    // return this.usersService.find(user.id);
   }
 
   @Put('self')
