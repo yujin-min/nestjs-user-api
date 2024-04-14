@@ -11,6 +11,7 @@ import { Cron } from '@nestjs/schedule';
 @Injectable()
 export class UsersService {
   tokenCache: object = {};
+  chargeCache: object = {};
 
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
@@ -24,9 +25,14 @@ export class UsersService {
   async storeAllUsers() {
     const users = await this.findAll();
     users.forEach((user) => {
-      const { id, email, refreshToken } = user;
-      this.tokenCache[refreshToken] = { id, email };
+      const { id, email, refreshToken, type, account } = user;
+      this.tokenCache[refreshToken] = {
+        id,
+        email,
+      };
+      this.chargeCache[id] = { type, account: { id: account.id } };
     });
+    console.info('all users stored in cache');
   }
 
   async create({ email, name }: Partial<IUser>) {
@@ -105,7 +111,8 @@ export class UsersService {
   }
 
   async charge(id: number, amount: number) {
-    const user = await this.find(id);
+    /* const user = await this.find(id); */
+    const user = this.chargeCache[id];
     const wallet = this.amountStrategy.calculate({
       amount,
       userType: user.type,
