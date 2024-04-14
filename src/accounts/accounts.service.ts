@@ -3,19 +3,38 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { Account } from './models/account.entity';
 import { Wallet } from './models/wallet';
+import { Cron } from '@nestjs/schedule';
 
 const AMOUNT_TYPE = { BALANCE: 'balance', POINT: 'point' };
 
 @Injectable()
 export class AccountsService {
+  private accountCache: object = {};
+
   constructor(
     @InjectRepository(Account) private accountRepository: Repository<Account>,
     private dataSource: DataSource,
   ) {}
 
+  @Cron(new Date(Date.now() + 1000))
+  async storeAllAccounts() {
+    const accounts = await this.findAll();
+    accounts.forEach((account) => {
+      const { id, balance, point } = account;
+      this.accountCache[id] = { balance, point };
+    });
+    console.info('all accounts stored in cache');
+  }
+
   async create(queryRunner: QueryRunner) {
     const account = queryRunner.manager.create(Account);
-    return queryRunner.manager.save(Account, account);
+    const storedAccount = await queryRunner.manager.save(Account, account);
+    this.accountCache[storedAccount.id] = { balance: 0, point: 0 };
+    return storedAccount;
+  }
+
+  async findAll() {
+    return this.accountRepository.find();
   }
 
   async find(
@@ -59,17 +78,21 @@ export class AccountsService {
       await this.incrementBalance({ id, change: wallet.value.money }, runner);
       await this.incrementPoint({ id, change: wallet.value.point }, runner);
       await runner.commitTransaction();
+      this.accountCache[id].balance += wallet.value.money;
+      this.accountCache[id].point += wallet.value.point;
     } catch (e) {
       console.error(e);
       await runner.rollbackTransaction();
     } finally {
       await runner.release();
     }
+    return { id, ...this.accountCache[id] };
   }
 
   async remove({ id }: { id: string }, queryRunner: QueryRunner) {
     const account = await this.find({ id }, queryRunner);
     if (!account) throw new NotFoundException('account not found');
+    delete this.accountCache[id];
     return queryRunner.manager.remove(Account, account);
   }
 }

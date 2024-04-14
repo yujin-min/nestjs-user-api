@@ -10,8 +10,8 @@ import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class UsersService {
-  tokenCache: object = {};
-  chargeCache: object = {};
+  private tokenCache: object = {};
+  private chargeCache: object = {};
 
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
@@ -21,7 +21,7 @@ export class UsersService {
     private accountsService: AccountsService,
   ) {}
 
-  @Cron(new Date(Date.now() + 1000))
+  @Cron(new Date(Date.now() + 500))
   async storeAllUsers() {
     const users = await this.findAll();
     users.forEach((user) => {
@@ -117,10 +117,10 @@ export class UsersService {
       amount,
       userType: user.type,
     });
-    await this.accountsService.update({
+    return this.accountsService.update({
       id: user.account.id,
       wallet,
     });
-    return this.accountsService.find({ id: user.account.id });
+    // return this.accountsService.find({ id: user.account.id });
   }
 }
