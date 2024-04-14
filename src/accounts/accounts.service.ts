@@ -16,7 +16,7 @@ export class AccountsService {
     private dataSource: DataSource,
   ) {}
 
-  @Cron(new Date(Date.now() + 1000))
+  @Cron(new Date(Date.now() + 2000))
   async storeAllAccounts() {
     const accounts = await this.findAll();
     accounts.forEach((account) => {
